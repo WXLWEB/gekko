@@ -1,5 +1,5 @@
 // Everything is explained here:
-// @link https://github.com/askmike/gekko/blob/stable/docs/Configuring_gekko.md
+// @link https://gekko.wizb.it/docs/commandline/plugins.html
 
 var config = {};
 
@@ -13,13 +13,17 @@ config.debug = true; // for additional logging / debugging
 //                         WATCHING A MARKET
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Monitor the live market
 config.watch = {
 
-  // see https://github.com/askmike/gekko#supported-exchanges
-  exchange: 'Bitstamp',
-  currency: 'USD',
-  asset: 'BTC'
+  // see https://gekko.wizb.it/docs/introduction/supported_exchanges.html
+  exchange: 'poloniex',
+  currency: 'USDT',
+  asset: 'BTC',
+
+  // You can set your own tickrate (refresh rate).
+  // If you don't set it, the defaults are 2 sec for
+  // okcoin and 20 sec for all other exchanges.
+  // tickrate: 20
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,8 +33,8 @@ config.watch = {
 config.tradingAdvisor = {
   enabled: true,
   method: 'MACD',
-  candleSize: 60,
-  historySize: 25,
+  candleSize: 1,
+  historySize: 3,
   adapter: 'sqlite',
   talib: {
     enabled: false,
@@ -180,32 +184,12 @@ config['talib-macd'] = {
   }
 }
 
-config['debug-advice'] = {
-  wait: 1,
-  advice: 'long'
-}
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                       CONFIGURING PLUGINS
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-// Want Gekko to perform real trades on buy or sell advice?
-// Enabling this will activate trades for the market being
-// watched by `config.watch`.
-config.trader = {
-  enabled: false,
-  key: '',
-  secret: '',
-  username: '' // your username, only required for specific exchanges.
-}
-
-config.adviceLogger = {
-  enabled: true,
-  muteSoft: true // disable advice printout if it's soft
-}
-
-// do you want Gekko to calculate the profit of its own advice?
-config.profitSimulator = {
+// do you want Gekko to simulate the profit of the strategy's own advice?
+config.paperTrader = {
   enabled: true,
   // report the profit in the currency or the asset?
   reportInCurrency: true,
@@ -216,10 +200,34 @@ config.profitSimulator = {
     currency: 100,
   },
   // how much fee in % does each trade cost?
-  fee: 0.25,
+  feeMaker: 0.15,
+  feeTaker: 0.25,
+  feeUsing: 'maker',
   // how much slippage/spread should Gekko assume per trade?
-  slippage: 0.05
+  slippage: 0.05,
 }
+
+config.performanceAnalyzer = {
+  enabled: true,
+  riskFreeReturn: 5
+}
+
+// Want Gekko to perform real trades on buy or sell advice?
+// Enabling this will activate trades for the market being
+// watched by `config.watch`.
+config.trader = {
+  enabled: false,
+  key: '',
+  secret: '',
+  username: '', // your username, only required for specific exchanges.
+  passphrase: '' // GDAX, requires a passphrase.
+}
+
+config.adviceLogger = {
+  enabled: false,
+  muteSoft: true // disable advice printout if it's soft
+}
+
 config.pushover = {
   enabled: false,
   sendPushoverOnStart: false,
@@ -271,7 +279,7 @@ config.pushbullet = {
     // Send 'Gekko starting' message if true
   sendMessageOnStart: true,
     // disable advice printout if it's soft
-  muteSoft: true, 
+  muteSoft: true,
     // your pushbullet API key
   key: 'xxx',
     // your email, change it unless you are Azor Ahai
@@ -282,15 +290,41 @@ config.pushbullet = {
 
 config.ircbot = {
   enabled: false,
-  emitUpdats: false,
+  emitUpdates: false,
+  muteSoft: true,
   channel: '#your-channel',
   server: 'irc.freenode.net',
   botName: 'gekkobot'
 }
 
+config.telegrambot = {
+  enabled: false,
+  emitUpdates: false,
+  token: 'YOUR_TELEGRAM_BOT_TOKEN',
+  botName: 'gekkobot'
+}
+
+config.twitter = {
+    // sends pushbullets if true
+  enabled: false,
+    // Send 'Gekko starting' message if true
+  sendMessageOnStart: false,
+    // disable advice printout if it's soft
+  muteSoft: false,
+  tag: '[GEKKO]',
+    // twitter consumer key
+  consumer_key: '',
+    // twitter consumer secret
+  consumer_secret: '',
+    // twitter access token key
+  access_token_key: '',
+    // twitter access token secret
+  access_token_secret: ''
+};
+
 config.xmppbot = {
   enabled: false,
-  emitUpdats: false,
+  emitUpdates: false,
   client_id: 'jabber_id',
   client_pwd: 'jabber_pw',
   client_host: 'jabber_server',
@@ -323,42 +357,60 @@ config.redisBeacon = {
   ]
 }
 
+config.slack = {
+  enabled: false,
+  token: '',
+  sendMessageOnStart: true,
+  muteSoft: true,
+  channel: '' // #tradebot
+}
+
 config.candleWriter = {
-  adapter: 'sqlite',
-  enabled: true
+  enabled: false
+}
+
+config.adviceWriter = {
+  enabled: false,
+  muteSoft: true,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                       CONFIGURING ADAPTER
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+config.adapter = 'sqlite';
 
+config.sqlite = {
+  path: 'plugins/sqlite',
 
+  dataDirectory: 'history',
+  version: 0.1,
 
+  dependencies: []
+}
 
-
-config.adapters = {
-  sqlite: {
-    path: 'plugins/sqlite',
-
-    dataDirectory: './history',
-    version: 0.1,
-
-    dependencies: [{
-      module: 'sqlite3',
-      version: '3.1.4'
-    }]
-  },
   // Postgres adapter example config (please note: requires postgres >= 9.5):
-  postgresql: {
-    path: 'plugins/postgresql',
-    version: 0.1,
-    connectionString: 'postgres://user:pass@localhost:5432', // if default port
-    dependencies: [{
-      module: 'pg',
-      version: '6.1.0'
-    }]
-  }
+config.postgresql = {
+  path: 'plugins/postgresql',
+  version: 0.1,
+  connectionString: 'postgres://user:pass@localhost:5432', // if default port
+  database: null, // if set, we'll put all tables into a single database.
+  schema: 'public',
+  dependencies: [{
+    module: 'pg',
+    version: '6.1.0'
+  }]
+}
+
+// Mongodb adapter, requires mongodb >= 3.3 (no version earlier tested)
+config.mongodb = {
+  path: 'plugins/mongodb',
+  version: 0.1,
+  connectionString: 'mongodb://mongodb/gekko', // connection to mongodb server
+  dependencies: [{
+    module: 'mongojs',
+    version: '2.4.0'
+  }]
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -369,7 +421,6 @@ config.adapters = {
 // @link: https://github.com/askmike/gekko/blob/stable/docs/Backtesting.md
 
 config.backtest = {
-  adapter: 'sqlite',
   daterange: 'scan',
   batchSize: 50
 }
@@ -381,7 +432,7 @@ config.backtest = {
 config.importer = {
   daterange: {
     // NOTE: these dates are in UTC
-    from: "2015-09-09 12:00:00"
+    from: "2016-01-01 00:00:00"
   }
 }
 

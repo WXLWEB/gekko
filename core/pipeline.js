@@ -10,6 +10,7 @@
 
 */
 
+
 var util = require('./util');
 var dirs = util.dirs();
 
@@ -39,10 +40,12 @@ var pipeline = (settings) => {
   // meta information about every plugin that tells Gekko
   // something about every available plugin
   var pluginParameters = require(dirs.gekko + 'plugins');
+  // meta information about the events plugins can broadcast
+  // and how they should hooked up to consumers.
+  var subscriptions = require(dirs.gekko + 'subscriptions');
 
   // Instantiate each enabled plugin
   var loadPlugins = function(next) {
-
     // load all plugins
     async.mapSeries(
       pluginParameters,
@@ -71,13 +74,31 @@ var pipeline = (settings) => {
 
   // Subscribe all plugins to other emitting plugins
   var subscribePlugins = function(next) {
-    var subscriptions = require(dirs.gekko + 'subscriptions');
 
     // events broadcasted by plugins
     var pluginSubscriptions = _.filter(
       subscriptions,
-      function(sub) {
-        return sub.emitter !== 'market';
+      sub => sub.emitter !== 'market'
+    );
+
+    // some events can be broadcasted by different
+    // plugins, however the pipeline only allows a single
+    // emitting plugin for each event to be enabled.
+    _.each(
+      pluginSubscriptions.filter(s => _.isArray(s.emitter)),
+      subscription => {
+        var singleEventEmitters = subscription.emitter
+          .filter(s => _.size(plugins.filter(p => p.meta.slug === s)
+        ));
+
+        if(_.size(singleEventEmitters) > 1) {
+          var error = `Multiple plugins are broadcasting`;
+          error += ` the event "${subscription.event}" (${singleEventEmitters.join(',')}).`;
+          error += 'This is unsupported.'
+          util.die(error);
+        } else {
+          subscription.emitter = _.first(singleEventEmitters);
+        }
       }
     );
 
@@ -85,6 +106,7 @@ var pipeline = (settings) => {
     // emitting plugins
     _.each(plugins, function(plugin) {
       _.each(pluginSubscriptions, function(sub) {
+
         if(_.has(plugin, sub.handler)) {
 
           // if a plugin wants to listen
@@ -136,7 +158,6 @@ var pipeline = (settings) => {
 
   // TODO: move this somewhere where it makes more sense
   var prepareMarket = function(next) {
-
     if(mode === 'backtest' && config.backtest.daterange === 'scan')
       require(dirs.core + 'prepareDateRange')(next);
     else
@@ -154,8 +175,14 @@ var pipeline = (settings) => {
       prepareMarket
     ],
     function() {
-      // load a market based on the mode
-      var Market = require(dirs.markets + mode);
+      // load a market based on the config (or fallback to mode)
+      let marketType;
+      if(config.market)
+        marketType = config.market.type;
+      else
+        marketType = mode;
+
+      var Market = require(dirs.markets + marketType);
 
       var market = new Market(config);
       var gekko = new GekkoStream(candleConsumers);

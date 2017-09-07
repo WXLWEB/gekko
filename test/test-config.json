@@ -21,7 +21,9 @@
       "asset": 1,
       "currency": 100
     },
-    "fee": 0.25,
+    "feeMaker": 0.15,
+    "feeTaker": 0.25,
+    "feeUsing": "maker",
     "slippage": 0.05
   },
   "pushover": {
@@ -56,14 +58,14 @@
   },
   "ircbot": {
     "enabled": false,
-    "emitUpdats": false,
+    "emitUpdates": false,
     "channel": "#your-channel",
     "server": "irc.freenode.net",
     "botName": "gekkobot"
   },
   "xmppbot": {
     "enabled": false,
-    "emitUpdats": false,
+    "emitUpdates": false,
     "client_id": "jabber_id",
     "client_pwd": "jabber_pw",
     "client_host": "jabber_server",
