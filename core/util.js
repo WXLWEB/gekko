@@ -19,7 +19,6 @@ var _args = false;
 // helper functions
 var util = {
   getConfig: function() {
-    // cache
     if(_config)
     return _config;
 
