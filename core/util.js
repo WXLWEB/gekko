@@ -21,15 +21,14 @@ var util = {
   getConfig: function() {
     // cache
     if(_config)
-      return _config;
+    return _config;
 
-    if(!program.config)
-        util.die('Please specify a config file.', true);
+    var configFile = path.resolve(program.config || util.dirs().gekko + 'config.js');
 
-    if(!fs.existsSync(util.dirs().gekko + program.config))
-      util.die('Cannot find the specified config file.', true);
+    if(!fs.existsSync(configFile))
+      util.die('Cannot find a config file.');
 
-    _config = require(util.dirs().gekko + program.config);
+    _config = require(configFile);
     return _config;
   },
   // overwrite the whole config
@@ -169,7 +168,7 @@ var util = {
       minTimeout: 1 * 1000,
       maxTimeout: 3 * 1000
     });
- 
+
     operation.attempt(function(currentAttempt) {
       fn(function(err, result) {
         if (operation.retry(err)) {
